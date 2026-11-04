@@ -1,6 +1,6 @@
 // =============================================================================
 //  WinPick – window overview with live previews and title search (Windows 10/11)
-//  Version: 2026-11-04 12:40 (Europe/Berlin)
+//  Version: 2026-11-04 14:20 (Europe/Berlin)
 //
 //  - A global hotkey (default Win+J, configurable) shows an overlay on the
 //    monitor under the mouse cursor.
@@ -234,7 +234,7 @@ unsafe fn save_settings(st: &mut State) {
 // Autostart (HKCU\...\Run)
 // ----------------------------------------------------------------------------
 fn run_value() -> String {
-    format!("\"{}\"", exe_path())
+    format!("\"{}\" --autostart", exe_path())
 }
 unsafe fn get_autostart() -> Option<String> {
     let mut buf = vec![0u16; 2048];
@@ -1111,6 +1111,22 @@ unsafe fn update_tray(op: NOTIFY_ICON_MESSAGE) {
     let _ = Shell_NotifyIconW(op, &stt.nid);
 }
 
+unsafe fn balloon(title: &str, body: &str) {
+    let stt = st();
+    let mut nid = stt.nid;
+    nid.uFlags = NIF_INFO;
+    nid.dwInfoFlags = NIIF_INFO;
+    nid.szInfoTitle = [0; 64];
+    for (i, c) in title.encode_utf16().take(63).enumerate() {
+        nid.szInfoTitle[i] = c;
+    }
+    nid.szInfo = [0; 256];
+    for (i, c) in body.encode_utf16().take(255).enumerate() {
+        nid.szInfo[i] = c;
+    }
+    let _ = Shell_NotifyIconW(NIM_MODIFY, &nid);
+}
+
 unsafe fn tray_menu() {
     let mut pt = POINT::default();
     let _ = GetCursorPos(&mut pt);
@@ -1841,6 +1857,11 @@ unsafe fn run() {
     let set = st().set;
     st().hotkey_ok = RegisterHotKey(Some(ov), HOTKEY_ID, HOT_KEY_MODIFIERS(set.mods | MOD_NOREPEAT.0), set.vk).is_ok();
     update_tray(NIM_ADD);
+    if st().hotkey_ok && !std::env::args().any(|a| a == "--autostart") {
+        // Tell the user which hotkey is active (it may differ from the default).
+        let txt = format!("Press {} to open the window overview.", hotkey_text(set.mods, set.vk));
+        balloon("WinPick is running", &txt);
+    }
     if !st().hotkey_ok {
         let msg = format!(
             "The hotkey {} is already in use.\n\nPlease choose a different one in the settings.",

@@ -1,6 +1,6 @@
 # =============================================================================
 #  WinPick - install / update and start
-#  Version: 2026-11-04 12:50 (Europe/Berlin)
+#  Version: 2026-11-04 14:20 (Europe/Berlin)
 #
 #  Usage (PowerShell, no admin rights required):
 #    irm https://raw.githubusercontent.com/schlingensiepen/winpick/main/deploy/install.ps1 | iex
@@ -40,5 +40,28 @@
     Unblock-File -Path $exe
 
     Start-Process -FilePath $exe
-    Write-Host "WinPick installed to $dir and started. Hotkey: Win+J (change it via the tray icon)."
+
+    # Report the hotkey actually configured (an existing WinPick.ini may override Win+J).
+    $hotkey = 'Win+J'
+    $ini = @((Join-Path $dir 'WinPick.ini'), (Join-Path $env:APPDATA 'WinPick\WinPick.ini')) | Where-Object { Test-Path $_ } | Select-Object -First 1
+    if ($ini) {
+        $cfg = @{}
+        foreach ($line in Get-Content $ini) { if ($line -match '^\s*(\w+)\s*=\s*(.*?)\s*$') { $cfg[$Matches[1]] = $Matches[2] } }
+        $mods = 0; $vk = 0
+        if ([int]::TryParse([string]$cfg['HotkeyMods'], [ref]$mods) -and [int]::TryParse([string]$cfg['HotkeyKey'], [ref]$vk) -and $mods -ne 0 -and $vk -ne 0) {
+            $parts = @()
+            if ($mods -band 8) { $parts += 'Win' }
+            if ($mods -band 2) { $parts += 'Ctrl' }
+            if ($mods -band 1) { $parts += 'Alt' }
+            if ($mods -band 4) { $parts += 'Shift' }
+            $names = @{ 0x20 = 'Space'; 0x09 = 'Tab'; 0xBE = '.'; 0xBC = ','; 0xBD = '-'; 0xBB = '+' }
+            if (($vk -ge 0x30 -and $vk -le 0x39) -or ($vk -ge 0x41 -and $vk -le 0x5A)) { $key = [string][char]$vk }
+            elseif ($vk -ge 0x70 -and $vk -le 0x87) { $key = 'F' + ($vk - 0x6F) }
+            elseif ($names.ContainsKey($vk)) { $key = $names[$vk] }
+            else { $key = '#' + $vk }
+            $hotkey = (($parts + $key) -join '+')
+        }
+        Write-Host "Using existing settings: $ini"
+    }
+    Write-Host "WinPick installed to $dir and started. Hotkey: $hotkey (change it via the tray icon)."
 }
