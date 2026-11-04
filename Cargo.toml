@@ -1,0 +1,47 @@
+# WinPick (Rust) – Version: 2026-11-04 12:10 (Europe/Berlin)
+[package]
+name = "winpick"
+version = "1.0.0"
+edition = "2021"
+description = "Window overview with live previews and title search for Windows 10/11"
+license = "Apache-2.0"
+authors = ["Jörn Schlingensiepen"]
+repository = "https://github.com/schlingensiepen/winpick"
+build = "build.rs"
+publish = false
+
+[[bin]]
+name = "WinPick"
+path = "src/main.rs"
+
+[dependencies.windows]
+version = "0.62"
+features = [
+    "Win32_Foundation",
+    "Win32_Graphics_Dwm",
+    "Win32_Graphics_Gdi",
+    "Win32_Graphics_GdiPlus",
+    "Win32_Security",
+    "Win32_System_Diagnostics_Debug",
+    "Win32_System_LibraryLoader",
+    "Win32_System_Registry",
+    "Win32_System_Threading",
+    "Win32_System_WindowsProgramming",
+    "Win32_Storage_FileSystem",
+    "Win32_UI_Controls",
+    "Win32_UI_Controls_Dialogs",
+    "Win32_UI_HiDpi",
+    "Win32_UI_Input_KeyboardAndMouse",
+    "Win32_UI_Shell",
+    "Win32_UI_WindowsAndMessaging",
+]
+
+[build-dependencies]
+embed-resource = "3"
+
+[profile.release]
+opt-level = 3
+lto = true
+codegen-units = 1
+panic = "abort"
+strip = true

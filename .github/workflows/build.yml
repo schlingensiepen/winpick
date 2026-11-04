@@ -1,0 +1,74 @@
+# WinPick – build & release
+# Version: 2026-11-04 12:50 (Europe/Berlin)
+#
+# - Every push/PR: native Windows build (MSVC, static CRT), EXE as artifact.
+# - Push to main: if no tag v<version from Cargo.toml> exists yet, create a
+#   release with WinPick.exe + WinPick.exe.sha256 (notes from CHANGELOG.md).
+name: build
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Toolchain
+        run: |
+          rustup update stable --no-self-update
+          rustup default stable
+          rustup component add clippy
+
+      - name: Lint
+        run: cargo clippy --release --locked -- -D warnings
+
+      - name: Build
+        run: |
+          cargo build --release --locked
+          mkdir -p dist
+          cp target/release/WinPick.exe dist/
+          (cd dist && sha256sum WinPick.exe | cut -d' ' -f1 > WinPick.exe.sha256)
+          ls -l dist; cat dist/WinPick.exe.sha256
+
+      - name: Check (no VC++ runtime DLLs imported)
+        shell: pwsh
+        run: |
+          $vs = & "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe" -latest -property installationPath
+          $dumpbin = Get-ChildItem "$vs\VC\Tools\MSVC" -Recurse -Filter dumpbin.exe | Where-Object FullName -match 'Hostx64\\x64' | Select-Object -First 1
+          $imports = & $dumpbin.FullName /dependents dist\WinPick.exe | Select-String '\.dll' | ForEach-Object { $_.Line.Trim() }
+          $imports
+          if ($imports -match 'vcruntime|msvcp|api-ms-win-crt') { throw "Unexpected runtime DLL dependency" }
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: WinPick
+          path: dist/
+
+      - name: Release (if this version is not published yet)
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          ver=$(sed -n 's/^version = "\(.*\)"/\1/p' Cargo.toml | head -1)
+          tag="v$ver"
+          if git rev-parse -q --verify "refs/tags/$tag" >/dev/null; then
+            echo "$tag already exists - no new release."
+            exit 0
+          fi
+          awk -v h="## [$ver]" 'index($0,h)==1{f=1;next} /^## /{f=0} f' CHANGELOG.md > notes.md
+          [ -s notes.md ] || echo "WinPick $ver" > notes.md
+          gh release create "$tag" dist/WinPick.exe dist/WinPick.exe.sha256 \
+            --target "$GITHUB_SHA" --title "WinPick $ver" --notes-file notes.md
