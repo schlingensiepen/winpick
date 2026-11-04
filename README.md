@@ -6,6 +6,10 @@
 irm https://raw.githubusercontent.com/schlingensiepen/winpick/main/deploy/install.ps1 | iex
 ```
 
+<p align="center">
+  <img src="docs/images/screenshot.png" width="100%" alt="WinPick overlay: search box on top, live previews of all open windows in a grid">
+</p>
+
 ---
 
 WinPick is a window overview for Windows 10/11. Press a hotkey (default **Win+J**) and an overlay appears on the current screen. It shows live previews of all open windows in a grid. Type in the search box at the top to filter the windows by title, then press **Enter** to bring all matches to the front.
