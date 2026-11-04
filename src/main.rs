@@ -1,6 +1,6 @@
 // =============================================================================
 //  WinPick – window overview with live previews and title search (Windows 10/11)
-//  Version: 2026-11-04 14:20 (Europe/Berlin)
+//  Version: 2026-11-04 14:45 (Europe/Berlin)
 //
 //  - A global hotkey (default Win+J, configurable) shows an overlay on the
 //    monitor under the mouse cursor.
@@ -12,6 +12,9 @@
 //    window only, Esc = close.
 //  - Settings are stored portably in WinPick.ini next to the EXE
 //    (fallback: %APPDATA%\WinPick\WinPick.ini).
+//
+//  Command line: --settings opens the settings dialog on start (used by the
+//  installer), --autostart suppresses the start notification (autostart entry).
 //
 //  Design rule: never touch other processes' input state. No AttachThreadInput,
 //  no injected key presses; WinPick only uses the foreground right it already
@@ -58,6 +61,7 @@ const IDC_BTN_SETTINGS: i32 = 1002;
 const WM_APP_TRAY: u32 = WM_APP + 1;
 const WM_APP_SHOW: u32 = WM_APP + 2;
 const WM_APP_HIDE: u32 = WM_APP + 3;
+const WM_APP_SETTINGS: u32 = WM_APP + 4;
 const IDM_OPEN: usize = 2001;
 const IDM_SETTINGS: usize = 2002;
 const IDM_ABOUT: usize = 2003;
@@ -128,6 +132,9 @@ unsafe fn window_text(h: HWND) -> String {
     let mut buf = vec![0u16; len as usize + 1];
     let n = GetWindowTextW(h, &mut buf);
     String::from_utf16_lossy(&buf[..n.max(0) as usize])
+}
+fn arg_present(name: &str) -> bool {
+    std::env::args().skip(1).any(|a| a.eq_ignore_ascii_case(name))
 }
 fn lower(s: &str) -> String {
     s.to_lowercase()
@@ -1297,6 +1304,10 @@ unsafe extern "system" fn overlay_proc(h: HWND, m: u32, wp: WPARAM, lp: LPARAM) 
             }
             return LRESULT(0);
         }
+        WM_APP_SETTINGS => {
+            show_settings();
+            return LRESULT(0);
+        }
         WM_APP_SHOW => {
             show_overlay();
             return LRESULT(0);
@@ -1740,7 +1751,8 @@ unsafe fn run() {
             let mut pid = 0u32;
             GetWindowThreadProcessId(other, Some(&mut pid));
             let _ = AllowSetForegroundWindow(pid);
-            let _ = PostMessageW(Some(other), WM_APP_SHOW, WPARAM(0), LPARAM(0));
+            let msg = if arg_present("--settings") { WM_APP_SETTINGS } else { WM_APP_SHOW };
+            let _ = PostMessageW(Some(other), msg, WPARAM(0), LPARAM(0));
         }
         return;
     }
@@ -1857,7 +1869,11 @@ unsafe fn run() {
     let set = st().set;
     st().hotkey_ok = RegisterHotKey(Some(ov), HOTKEY_ID, HOT_KEY_MODIFIERS(set.mods | MOD_NOREPEAT.0), set.vk).is_ok();
     update_tray(NIM_ADD);
-    if st().hotkey_ok && !std::env::args().any(|a| a == "--autostart") {
+    if arg_present("--settings") {
+        // Started by the installer on request: open the settings right away,
+        // so the active hotkey is visible and can be changed.
+        show_settings();
+    } else if st().hotkey_ok && !arg_present("--autostart") {
         // Tell the user which hotkey is active (it may differ from the default).
         let txt = format!("Press {} to open the window overview.", hotkey_text(set.mods, set.vk));
         balloon("WinPick is running", &txt);

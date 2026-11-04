@@ -20,7 +20,7 @@ WinPick is a window overview for Windows 10/11. Press a hotkey (default **Win+J*
 ## Download
 
 - Latest version: [Releases](https://github.com/schlingensiepen/winpick/releases/latest) → download `WinPick.exe` and run it
-- Or use the one-liner above: it installs to `%LOCALAPPDATA%\Programs\WinPick`, verifies the SHA-256 checksum and starts the program. The same command updates an existing installation.
+- Or use the one-liner above: it installs to `%LOCALAPPDATA%\Programs\WinPick`, verifies the SHA-256 checksum and asks whether to start WinPick right away (with the settings dialog open). The same command updates an existing installation.
 
 Uninstall:
 

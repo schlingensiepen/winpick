@@ -11,8 +11,9 @@ irm https://raw.githubusercontent.com/schlingensiepen/winpick/main/deploy/instal
 The script
 1. downloads `WinPick.exe` from the latest release,
 2. verifies the SHA-256 checksum,
-3. places the file in `%LOCALAPPDATA%\Programs\WinPick` and
-4. starts it.
+3. places the file in `%LOCALAPPDATA%\Programs\WinPick`,
+4. shows the hotkey currently configured and
+5. asks *Start WinPick now?* (Enter or Y = yes, N = no). If yes, WinPick starts with the settings dialog open, so you can check or change the hotkey right away.
 
 No admin rights are required. Running the command again updates to the latest version.
 To install a specific version, set `$env:WINPICK_VERSION = 'v1.0.0'` before running it.
@@ -36,7 +37,7 @@ After starting, WinPick runs in the background and shows an icon in the notifica
 
 The overlay appears on the screen where the mouse cursor is. Windows are sorted by last use (most recently active first). The right end of the search box shows how many windows are shown out of how many in total.
 
-Starting the EXE again while WinPick is already running simply opens the overlay.
+Starting the EXE again while WinPick is already running simply opens the overlay. `WinPick.exe --settings` opens the settings dialog instead (both for a new and for an already running instance).
 
 ## Tray icon
 

@@ -3,6 +3,14 @@
 Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), versioning: [SemVer](https://semver.org/).
 A release is created automatically when the `version` in `Cargo.toml` on `main` has no tag yet.
 
+## [1.0.2] – 2026-11-04
+
+### Changed
+- The installer asks at the end whether to start WinPick (Enter/Y/J = yes, N = no). If yes, WinPick starts with the settings dialog open, so the active hotkey is visible right away.
+
+### Added
+- Command line option `--settings`: opens the settings dialog on start (also forwarded to an already running instance).
+
 ## [1.0.1] – 2026-11-04
 
 ### Fixed

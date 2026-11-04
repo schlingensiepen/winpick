@@ -1,13 +1,14 @@
 # =============================================================================
 #  WinPick - install / update and start
-#  Version: 2026-11-04 14:20 (Europe/Berlin)
+#  Version: 2026-11-04 14:45 (Europe/Berlin)
 #
 #  Usage (PowerShell, no admin rights required):
 #    irm https://raw.githubusercontent.com/schlingensiepen/winpick/main/deploy/install.ps1 | iex
 #
 #  Downloads WinPick.exe from the latest GitHub release to
-#  %LOCALAPPDATA%\Programs\WinPick, verifies the SHA-256 checksum and starts
-#  it. A running WinPick is stopped first.
+#  %LOCALAPPDATA%\Programs\WinPick and verifies the SHA-256 checksum. A running
+#  WinPick is stopped first. Finally it asks whether to start WinPick; if yes,
+#  WinPick starts with its settings dialog open.
 #  Optional: $env:WINPICK_VERSION = 'v1.0.0' selects a specific version.
 # =============================================================================
 & {
@@ -39,8 +40,6 @@
     Move-Item -Force -Path $tmp -Destination $exe
     Unblock-File -Path $exe
 
-    Start-Process -FilePath $exe
-
     # Report the hotkey actually configured (an existing WinPick.ini may override Win+J).
     $hotkey = 'Win+J'
     $ini = @((Join-Path $dir 'WinPick.ini'), (Join-Path $env:APPDATA 'WinPick\WinPick.ini')) | Where-Object { Test-Path $_ } | Select-Object -First 1
@@ -63,5 +62,18 @@
         }
         Write-Host "Using existing settings: $ini"
     }
-    Write-Host "WinPick installed to $dir and started. Hotkey: $hotkey (change it via the tray icon)."
+    Write-Host "WinPick installed to $dir. Hotkey: $hotkey"
+
+    # Ask whether to start now (Enter = yes; J/Y = yes, N = no). Non-interactive: start.
+    $start = $true
+    try {
+        $answer = Read-Host 'Start WinPick now? The settings dialog will open [Y/n]'
+        if ($answer -match '^\s*[nN]') { $start = $false }
+    } catch { }
+    if ($start) {
+        Start-Process -FilePath $exe -ArgumentList '--settings'
+        Write-Host 'WinPick started. Check or change the hotkey in the settings dialog.'
+    } else {
+        Write-Host "WinPick was not started. Start it later with: & '$exe'"
+    }
 }
