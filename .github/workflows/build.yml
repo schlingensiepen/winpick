@@ -1,5 +1,5 @@
 # WinPick – build & release
-# Version: 2026-11-04 12:50 (Europe/Berlin)
+# Version: 2026-11-04 13:05 (Europe/Berlin)
 #
 # - Every push/PR: native Windows build (MSVC, static CRT), EXE as artifact.
 # - Push to main: if no tag v<version from Cargo.toml> exists yet, create a
@@ -22,7 +22,7 @@ jobs:
       run:
         shell: bash
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           fetch-depth: 0
 
@@ -52,7 +52,7 @@ jobs:
           $imports
           if ($imports -match 'vcruntime|msvcp|api-ms-win-crt') { throw "Unexpected runtime DLL dependency" }
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v5
         with:
           name: WinPick
           path: dist/
